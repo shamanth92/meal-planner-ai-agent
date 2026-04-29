@@ -1,3 +1,25 @@
+/**
+ * Search Meals Utility
+ * 
+ * Searches Spoonacular API for recipes matching given criteria.
+ * Used by mealPickerNode to find recipes matching AI-generated meal suggestions.
+ * 
+ * Features:
+ * - Complex search with multiple filters (query, cuisine, diet)
+ * - Random offset for variety in results
+ * - Requires recipes to have instructions
+ * - Sorts by ingredient usage
+ * 
+ * API: Spoonacular complexSearch endpoint
+ * 
+ * @param params.query - Search keywords (e.g., "chicken tikka masala")
+ * @param params.cuisine - Cuisine type (e.g., "Indian", "Mexican")
+ * @param params.diet - Dietary restriction (vegetarian/vegan/non-veg)
+ * @param params.number - Number of results to return (default: 3)
+ * 
+ * @returns Spoonacular search response with results array
+ */
+
 import { config } from "../config/env";
 
 interface SearchMealsParams {
@@ -10,8 +32,7 @@ interface SearchMealsParams {
 export const searchMeals = async (params: SearchMealsParams): Promise<any> => {
     const { query, cuisine, diet, number = 3 } = params;
     
-    console.log("[SearchMeals] Searching with params:", params);
-    
+    // Random offset for variety in results (0-19)
     const randomOffset = Math.floor(Math.random() * 20);
     
     const response = await fetch(
@@ -25,7 +46,6 @@ export const searchMeals = async (params: SearchMealsParams): Promise<any> => {
     );
     
     const data = await response.json();
-    console.log("[SearchMeals] Found results:", data.results?.length || 0);
     
     return data;
 };

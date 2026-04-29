@@ -1,3 +1,10 @@
+/**
+ * State Schema Definitions for Recipe Planning Agent
+ * 
+ * This file defines all Zod schemas used throughout the recipe planning workflow.
+ * These schemas ensure type safety and validation across the LangGraph state machine.
+ */
+
 import { StateSchema } from "@langchain/langgraph";
 import * as z from "zod";
 
@@ -73,6 +80,31 @@ export const GroceryItemSchema = z.object({
     groceryList: z.array(z.string()),
 });
 
+/**
+ * RecipeAgentState
+ * 
+ * Main state schema for the LangGraph recipe planning workflow.
+ * This state is passed between nodes and persisted by the checkpointer.
+ * 
+ * State Flow:
+ * 1. recipeQuery: User input (always present)
+ * 2. meals: Generated meal suggestions (after mealSuggesterNode)
+ * 3. recipes: Detailed recipes (after recipeFetcherNode)
+ * 4. weeklyNutrition: Nutrition analysis (after nutritionBalancerNode, weekly only)
+ * 5. groceryList: Shopping list (after groceryFormatterNode)
+ * 
+ * Human-in-the-Loop Fields (weekly mode):
+ * - userFeedback: User's feedback for meal plan regeneration
+ * - needsRegeneration: Flag to trigger regeneration loop
+ * 
+ * @property recipeQuery - User's meal planning request (required)
+ * @property meals - AI-generated meal suggestions (optional)
+ * @property recipes - Complete recipes with instructions (optional)
+ * @property groceryList - Meal-separated grocery lists (optional)
+ * @property weeklyNutrition - Weekly nutrition data and analysis (optional)
+ * @property userFeedback - User feedback for regeneration (optional)
+ * @property needsRegeneration - Regeneration flag for human review (optional)
+ */
 export const RecipeAgentState = new StateSchema({
     recipeQuery: RecipeQuerySchema,
     meals: z.array(MealSchema).optional(),

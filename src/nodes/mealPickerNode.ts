@@ -1,11 +1,38 @@
+/**
+ * Meal Picker Node
+ * 
+ * Searches Spoonacular API for recipes matching AI-generated meal suggestions.
+ * Uses retry logic with fallback keywords if primary search fails.
+ * 
+ * Responsibilities:
+ * - Search Spoonacular for each meal using keywords
+ * - Retry with fallback keywords if no results found
+ * - Update meals with Spoonacular recipe IDs
+ * - Keep AI-generated meal if no Spoonacular match found
+ * 
+ * Search Strategy:
+ * 1. Try primary keywords (e.g., ["chicken", "tikka", "masala"])
+ * 2. If no results, retry with fallback keywords (e.g., ["chicken", "curry"])
+ * 3. If still no results, keep original AI-generated meal without spoonacularId
+ * 
+ * Input State:
+ * - meals: AI-generated meal suggestions with keywords
+ * - recipeQuery: User preferences (dietary restrictions, etc.)
+ * 
+ * Output State:
+ * - meals: Updated meals with spoonacularId (if found)
+ * 
+ * Next Node:
+ * - Daily mode: recipeFetcher
+ * - Weekly mode: humanReview
+ */
+
 import { RecipeAgentState, MealSchema } from "../agent/state";
 import { searchMeals } from "../tools/searchMeals";
 import { z } from "zod";
 
 export const mealPickerNode = async (state: typeof RecipeAgentState.State) => {
     try {
-        console.log("[MealPicker] Starting meal picking from Spoonacular...");
-
         if (!state.meals || state.meals.length === 0) {
             throw new Error("No meals found in state");
         }
@@ -16,21 +43,16 @@ export const mealPickerNode = async (state: typeof RecipeAgentState.State) => {
 
         const updatedMeals: z.infer<typeof MealSchema>[] = [];
         
+        // Process each meal sequentially (async iteration)
         for (const meal of state.meals) {
-            console.log("[MealPicker] Processing meal:", meal.name);
             const recipeQuery = state.recipeQuery;
 
-            // Build query from keywords
+            // Build search query from AI-generated keywords
             const query = meal.keywords.join(" ");
             const cuisine = meal.cuisine;
             const diet = recipeQuery.dietary;
 
-            console.log("[MealPicker] Searching Spoonacular with:");
-            console.log("  Query:", query);
-            console.log("  Cuisine:", cuisine);
-            console.log("  Diet:", diet);
-
-            // Search for meals using keywords
+            // Primary search with main keywords
             let searchResults = await searchMeals({
                 query,
                 cuisine,
@@ -38,12 +60,9 @@ export const mealPickerNode = async (state: typeof RecipeAgentState.State) => {
                 number: 1
             });
 
-            // Retry with fallback keywords if no results
+            // Retry with fallback keywords if primary search fails
             if (!searchResults || !searchResults.results || searchResults.results.length === 0) {
-                console.warn("[MealPicker] No results found with full keywords, retrying with fallback keywords...");
-
                 const fallbackQuery = meal.fallbackKeywords.join(" ");
-                console.log("[MealPicker] Fallback query:", fallbackQuery);
 
                 searchResults = await searchMeals({
                     query: fallbackQuery,
@@ -52,29 +71,24 @@ export const mealPickerNode = async (state: typeof RecipeAgentState.State) => {
                     number: 1
                 });
 
+                // If fallback also fails, keep AI-generated meal without spoonacularId
                 if (!searchResults || !searchResults.results || searchResults.results.length === 0) {
-                    console.warn("[MealPicker] No results found even with fallback keywords, keeping AI-generated meal");
                     updatedMeals.push(meal);
                     continue;
                 }
-
-                console.log("[MealPicker] Found results with fallback keywords!");
             }
 
-            // Pick the first result and update the meal with spoonacularId
+            // Pick first result and update meal with Spoonacular ID
             const selectedMeal = searchResults.results[0];
 
-            console.log("[MealPicker] Selected meal from Spoonacular:", selectedMeal.title);
-
-            // Update the meal with Spoonacular data
+            // Update meal with Spoonacular data
+            // spoonacularId will be used by recipeFetcher to get full recipe details
             updatedMeals.push({
                 ...meal,
                 name: selectedMeal.title || meal.name,
                 spoonacularId: selectedMeal.id
             });
         }
-
-        console.log("[MealPicker] Updated", updatedMeals.length, "meals with Spoonacular data");
 
         return { meals: updatedMeals };
 

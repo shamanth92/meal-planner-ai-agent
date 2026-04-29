@@ -1,3 +1,38 @@
+/**
+ * Nutrition Balancer Node
+ * 
+ * Analyzes weekly nutrition data and provides AI-generated insights.
+ * Only runs in weekly mode.
+ * 
+ * Responsibilities:
+ * - Extract nutrition from all 7 recipes
+ * - Calculate daily nutrition breakdown
+ * - Aggregate weekly totals (calories, protein, carbs)
+ * - Use AI to analyze nutrition balance
+ * - Provide recommendations for improvement
+ * 
+ * Analysis Process:
+ * 1. Extract nutrition from each recipe
+ * 2. Map to daily breakdown (day 1-7)
+ * 3. Calculate weekly totals
+ * 4. Send to AI for analysis
+ * 5. AI returns: summary, pros, cons, recommendations
+ * 
+ * Input State:
+ * - recipes: Array of 7 recipes with nutrition data
+ * - meals: Array of 7 meals (for day mapping)
+ * 
+ * Output State:
+ * - weeklyNutrition: {
+ *     totals: Weekly aggregated nutrition
+ *     daily: Per-day breakdown
+ *     analysis: AI-generated insights
+ *   }
+ * 
+ * Next Node:
+ * - groceryFormatter
+ */
+
 import { RecipeAgentState, WeeklyNutritionSchema } from "../agent/state";
 import { model } from "../config/model";
 import { NutritionBalancerPrompt } from "../prompts";
@@ -5,8 +40,6 @@ import { z } from "zod";
 
 export const nutritionBalancerNode = async (state: typeof RecipeAgentState.State) => {
     try {
-        console.log("[NutritionBalancer] Starting nutrition analysis...");
-        
         if (!state.recipes || state.recipes.length === 0) {
             throw new Error("No recipes found in state");
         }
@@ -15,9 +48,7 @@ export const nutritionBalancerNode = async (state: typeof RecipeAgentState.State
             throw new Error("No meals found in state");
         }
         
-        console.log("[NutritionBalancer] Extracting nutrition from", state.recipes.length, "recipes");
-        
-        // Extract nutrition data from recipes and map to days
+        // Extract nutrition from recipes and map to daily breakdown
         const dailyNutrition = state.meals.map((meal, index) => {
             const recipe = state.recipes?.[index];
             if (!recipe || !recipe.nutrition) {
@@ -38,7 +69,7 @@ export const nutritionBalancerNode = async (state: typeof RecipeAgentState.State
             };
         });
         
-        // Calculate weekly totals
+        // Aggregate weekly totals using reduce
         const totals = dailyNutrition.reduce(
             (acc, day) => ({
                 calories: acc.calories + day.calories,
@@ -53,10 +84,7 @@ export const nutritionBalancerNode = async (state: typeof RecipeAgentState.State
             daily: dailyNutrition
         };
         
-        console.log("[NutritionBalancer] Weekly totals:", totals);
-        console.log("[NutritionBalancer] Invoking AI for nutrition analysis...");
-        
-        // Get AI analysis
+        // Get AI analysis of nutrition balance
         const NutritionResponseSchema = z.object({
             weeklyNutrition: WeeklyNutritionSchema
         });
@@ -69,9 +97,6 @@ export const nutritionBalancerNode = async (state: typeof RecipeAgentState.State
         if (!validatedData.weeklyNutrition) {
             throw new Error("No nutrition data was returned by the AI");
         }
-        
-        console.log("[NutritionBalancer] Analysis complete");
-        console.log("[NutritionBalancer] Summary:", validatedData.weeklyNutrition.analysis?.summary);
         
         return { weeklyNutrition: validatedData.weeklyNutrition };
         
