@@ -13,6 +13,11 @@ export const mealSuggesterNode = async (state: typeof RecipeAgentState.State) =>
 
         const mealQuery = state.recipeQuery;
         
+        // Check if this is a regeneration with user feedback
+        if (state.userFeedback) {
+            console.log("[MealSuggester] Regenerating with user feedback:", state.userFeedback);
+        }
+        
         const MealsResponseSchema = z.object({
             meals: z.array(MealSchema)
         });
@@ -21,10 +26,19 @@ export const mealSuggesterNode = async (state: typeof RecipeAgentState.State) =>
         console.log("[MealSuggester] Invoking AI to generate meal suggestion...");
         const structuredMeals = model.withStructuredOutput(MealsResponseSchema);
         let response;
+        
         if(mealQuery.mode === "daily") {
-            response = await structuredMeals.invoke(DailyMealSearchPrompt(JSON.stringify(mealQuery)));
+            const prompt = DailyMealSearchPrompt(JSON.stringify(mealQuery));
+            response = await structuredMeals.invoke(prompt);
         } else {
-            response = await structuredMeals.invoke(WeeklyMealSearchPrompt(JSON.stringify(mealQuery)));
+            let prompt = WeeklyMealSearchPrompt(JSON.stringify(mealQuery));
+            
+            // Append user feedback if regenerating
+            if (state.userFeedback) {
+                prompt += `\n\nIMPORTANT: The user has provided feedback on the previous meal plan. Please regenerate considering this feedback:\nUser Feedback: ${state.userFeedback}\n\nGenerate a new meal plan that addresses the user's concerns while maintaining the original preferences.`;
+            }
+            
+            response = await structuredMeals.invoke(prompt);
         }
 
         // Validate response
@@ -36,7 +50,12 @@ export const mealSuggesterNode = async (state: typeof RecipeAgentState.State) =>
 
         console.log("[MealSuggester] Successfully generated meals:", validatedData.meals);
         
-        return { meals: validatedData.meals };
+        // Clear feedback after using it
+        return { 
+            meals: validatedData.meals,
+            userFeedback: undefined,
+            needsRegeneration: undefined
+        };
         
     } catch (error) {
         console.error("[MealSuggester] Error:", error);

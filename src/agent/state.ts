@@ -79,4 +79,6 @@ export const RecipeAgentState = new StateSchema({
     recipes: z.array(RecipeSchema).optional(),
     groceryList: z.array(GroceryItemSchema).optional(),
     weeklyNutrition: WeeklyNutritionSchema.optional(),
+    userFeedback: z.string().optional(),
+    needsRegeneration: z.boolean().optional(),
 });
