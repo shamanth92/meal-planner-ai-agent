@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Planner API Test Client</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 8px;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-left: 3px solid transparent;
+        }
+
+        .log-connected { border-left-color: #4caf50; }
+        .log-node { border-left-color: #2196f3; }
+        .log-interrupt { border-left-color: #ff9800; }
+        .log-complete { border-left-color: #4caf50; }
+        .log-error { border-left-color: #f44336; }
+        .log-info { border-left-color: #9e9e9e; }
+
+        .timestamp {
+            color: #888;
+            font-size: 11px;
+        }
+
+        .interrupt-panel {
+            background: #fff3cd;
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .interrupt-panel.active {
+            display: block;
+        }
+
+        .interrupt-panel h3 {
+            color: #ff9800;
+            margin-bottom: 15px;
+        }
+
+        .meal-card {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .meal-card h4 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .meal-card p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .decision-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .decision-buttons button {
+            flex: 1;
+        }
+
+        .btn-yes {
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+        }
+
+        .btn-no {
+            background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-idle { background: #e0e0e0; color: #666; }
+        .status-running { background: #2196f3; color: white; }
+        .status-interrupted { background: #ff9800; color: white; }
+        .status-completed { background: #4caf50; color: white; }
+        .status-error { background: #f44336; color: white; }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍳 Recipe Planner API Test Client</h1>
+            <p>Test the SSE-based recipe planning workflow</p>
+        </div>
+
+        <div class="content">
+            <div class="panel">
+                <h2>Configuration</h2>
+                
+                <div class="form-group">
+                    <label>Mode</label>
+                    <select id="mode">
+                        <option value="daily">Daily</option>
+                        <option value="weekly" selected>Weekly</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Cuisines (comma-separated)</label>
+                    <input type="text" id="cuisines" value="Indian, Mexican, Italian" placeholder="Indian, Mexican">
+                </div>
+
+                <div class="form-group">
+                    <label>Goal</label>
+                    <select id="goal">
+                        <option value="balanced" selected>Balanced</option>
+                        <option value="weight_loss">Weight Loss</option>
+                        <option value="muscle_gain">Muscle Gain</option>
+                        <option value="high_protein">High Protein</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Dietary</label>
+                    <select id="dietary">
+                        <option value="vegetarian" selected>Vegetarian</option>
+                        <option value="vegan">Vegan</option>
+                        <option value="non-veg">Non-Veg</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Meal Time (for weekly mode)</label>
+                    <select id="mealTime">
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner" selected>Dinner</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Budget (optional)</label>
+                    <input type="number" id="budget" placeholder="50">
+                </div>
+
+                <button id="startBtn" onclick="startSession()">
+                    Start Recipe Planning
+                </button>
+
+                <div style="margin-top: 20px;">
+                    <p><strong>Status:</strong> <span id="status" class="status-badge status-idle">Idle</span></p>
+                    <p style="margin-top: 10px; font-size: 13px; color: #666;">
+                        <strong>Thread ID:</strong> <span id="threadId">-</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Event Log</h2>
+                <div class="log-container" id="logContainer"></div>
+                <button onclick="clearLog()" style="margin-top: 10px; background: #666;">Clear Log</button>
+            </div>
+        </div>
+
+        <div id="interruptPanel" class="interrupt-panel">
+            <h3>🍽️ Review Your Meal Plan</h3>
+            <p style="margin-bottom: 15px; color: #666;">Here are the suggested meals. Would you like to proceed?</p>
+            <div id="mealsContainer"></div>
+            
+            <div class="form-group" id="feedbackGroup" style="display: none;">
+                <label>Feedback (required for "No")</label>
+                <textarea id="feedback" rows="3" placeholder="I want more variety in cuisines..."></textarea>
+            </div>
+
+            <div class="decision-buttons">
+                <button class="btn-yes" onclick="sendDecision('yes')">✓ Yes, Proceed</button>
+                <button class="btn-no" id="noBtn" onclick="toggleFeedback()">✗ No, Regenerate</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let currentThreadId = null;
+
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '';
+        }
+
+        function setStatus(status, text) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = `status-badge status-${status}`;
+            statusEl.textContent = text;
+        }
+
+        async function startSession() {
+            const startBtn = document.getElementById('startBtn');
+            startBtn.disabled = true;
+            
+            const cuisines = document.getElementById('cuisines').value.split(',').map(c => c.trim());
+            const mode = document.getElementById('mode').value;
+            const budget = document.getElementById('budget').value;
+
+            const requestBody = {
+                mode: mode,
+                cuisines: cuisines,
+                goal: document.getElementById('goal').value,
+                dietary: document.getElementById('dietary').value,
+                mealTime: document.getElementById('mealTime').value
+            };
+
+            if (budget) {
+                requestBody.budget = parseInt(budget);
+            }
+
+            log('📤 Creating new session...', 'info');
+            setStatus('running', 'Creating Session');
+
+            try {
+                const response = await fetch('http://localhost:3000/api/recipe-plan/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to create session');
+                }
+
+                currentThreadId = data.threadId;
+                document.getElementById('threadId').textContent = currentThreadId;
+                
+                log(`✅ Session created: ${currentThreadId}`, 'connected');
+                log(`📡 Connecting to SSE stream...`, 'info');
+
+                connectToStream(currentThreadId);
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                setStatus('error', 'Error');
+                startBtn.disabled = false;
+            }
+        }
+
+        function connectToStream(threadId) {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource(`http://localhost:3000/api/recipe-plan/stream/${threadId}`);
+
+            eventSource.addEventListener('connected', (event) => {
+                const data = JSON.parse(event.data);
+                log(`🔗 ${data.message}`, 'connected');
+                setStatus('running', 'Streaming');
+            });
+
+            eventSource.addEventListener('node_complete', (event) => {
+                const data = JSON.parse(event.data);
+                log(`✓ Node completed: <strong>${data.node}</strong>`, 'node');
+            });
+
+            eventSource.addEventListener('interrupt', (event) => {
+                const data = JSON.parse(event.data);
+                log(`⏸️ Interrupt: ${data.question}`, 'interrupt');
+                setStatus('interrupted', 'Waiting for Decision');
+                showInterruptPanel(data);
+            });
+
+            eventSource.addEventListener('complete', (event) => {
+                const data = JSON.parse(event.data);
+                log(`🎉 Workflow completed!`, 'complete');
+                setStatus('completed', 'Completed');
+                document.getElementById('startBtn').disabled = false;
+                eventSource.close();
+                
+                // Show final results
+                if (data.finalState) {
+                    log(`📊 Final Results:`, 'complete');
+                    
+                    // Display formatted JSON
+                    const logContainer = document.getElementById('logContainer');
+                    const resultsDiv = document.createElement('div');
+                    resultsDiv.className = 'log-entry log-complete';
+                    resultsDiv.innerHTML = `
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; font-weight: bold; color: #4caf50;">
+                                📋 Click to view complete results JSON
+                            </summary>
+                            <pre style="background: #2d2d2d; padding: 15px; border-radius: 6px; overflow-x: auto; margin-top: 10px; font-size: 12px; line-height: 1.4;">${JSON.stringify(data.finalState, null, 2)}</pre>
+                        </details>
+                    `;
+                    logContainer.appendChild(resultsDiv);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+            });
+
+            eventSource.addEventListener('error', (event) => {
+                log(`❌ SSE Error occurred`, 'error');
+                setStatus('error', 'Error');
+                document.getElementById('startBtn').disabled = false;
+                eventSource.close();
+            });
+
+            eventSource.onerror = (error) => {
+                log(`❌ Connection error`, 'error');
+                setStatus('error', 'Connection Error');
+                document.getElementById('startBtn').disabled = false;
+            };
+        }
+
+        function showInterruptPanel(data) {
+            const panel = document.getElementById('interruptPanel');
+            const mealsContainer = document.getElementById('mealsContainer');
+            const feedbackGroup = document.getElementById('feedbackGroup');
+            const noBtn = document.getElementById('noBtn');
+            const feedbackInput = document.getElementById('feedback');
+            
+            // Reset form state for new interrupt
+            mealsContainer.innerHTML = '';
+            feedbackGroup.style.display = 'none';
+            feedbackInput.value = '';
+            noBtn.textContent = '✗ No, Regenerate';
+            
+            if (data.meals && data.meals.length > 0) {
+                data.meals.forEach((meal, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'meal-card';
+                    card.innerHTML = `
+                        <h4>Day ${meal.day || index + 1}: ${meal.name}</h4>
+                        <p><strong>Cuisine:</strong> ${meal.cuisine}</p>
+                        <p><strong>Description:</strong> ${meal.description}</p>
+                    `;
+                    mealsContainer.appendChild(card);
+                });
+            }
+            
+            panel.classList.add('active');
+        }
+
+        function toggleFeedback() {
+            const feedbackGroup = document.getElementById('feedbackGroup');
+            const noBtn = document.getElementById('noBtn');
+            
+            if (feedbackGroup.style.display === 'none') {
+                feedbackGroup.style.display = 'block';
+                noBtn.textContent = '📝 Submit Feedback & Regenerate';
+            } else {
+                sendDecision('no');
+            }
+        }
+
+        async function sendDecision(decision) {
+            const feedback = document.getElementById('feedback').value;
+            
+            if (decision === 'no' && !feedback.trim()) {
+                alert('Please provide feedback for regeneration');
+                return;
+            }
+
+            const requestBody = { decision };
+            if (decision === 'no') {
+                requestBody.feedback = feedback;
+            }
+
+            log(`📤 Sending decision: ${decision}`, 'info');
+            setStatus('running', 'Resuming');
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/recipe-plan/resume/${currentThreadId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to resume');
+                }
+
+                log(`✅ Resume acknowledged`, 'info');
+                document.getElementById('interruptPanel').classList.remove('active');
+                document.getElementById('feedbackGroup').style.display = 'none';
+                document.getElementById('feedback').value = '';
+                document.getElementById('noBtn').textContent = '✗ No, Regenerate';
+
+            } catch (error) {
+                log(`❌ Resume error: ${error.message}`, 'error');
+                setStatus('error', 'Error');
+            }
+        }
+    </script>
+</body>
+</html>
