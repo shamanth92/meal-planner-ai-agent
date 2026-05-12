@@ -109,6 +109,8 @@ router.get("/recipe-plan/stream/:threadId", async (req: Request, res: Response) 
             });
         }
         
+        console.log(`[API] Accessing session: ${threadId}`);
+        
         console.log(`[API] Starting SSE stream for session: ${threadId}`);
         
         // Store SSE response in session
@@ -117,15 +119,21 @@ router.get("/recipe-plan/stream/:threadId", async (req: Request, res: Response) 
         // Handle client disconnect
         req.on('close', () => {
             console.log(`[API] Client disconnected: ${threadId}`);
-            activeSessions.delete(threadId);
+            // Don't delete session here - it might be needed for resume
+            // Session will be deleted after resume completes or times out
         });
         
         // Execute graph with SSE streaming
         const result = await executeGraphWithSSE(res, threadId, session.initialInput);
         
+        console.log(`[API] Graph execution result - interrupted: ${result.interrupted}`);
+        
         // If not interrupted, session is complete - remove from active sessions
         if (!result.interrupted) {
+            console.log(`[API] Workflow completed, deleting session: ${threadId}`);
             activeSessions.delete(threadId);
+        } else {
+            console.log(`[API] Workflow interrupted, keeping session alive for resume: ${threadId}`);
         }
         
     } catch (error) {
@@ -170,6 +178,8 @@ router.post("/recipe-plan/resume/:threadId", async (req: Request, res: Response)
         
         console.log(`[API] Resume request for session: ${threadId}`);
         console.log(`[API] Decision: ${decision}, Feedback: ${feedback || 'none'}`);
+        console.log(`[API] Active sessions count: ${activeSessions.size}`);
+        console.log(`[API] Active session IDs:`, Array.from(activeSessions.keys()));
         
         // Validate decision
         if (!decision || !['yes', 'no'].includes(decision)) {
@@ -182,11 +192,14 @@ router.post("/recipe-plan/resume/:threadId", async (req: Request, res: Response)
         const session = activeSessions.get(threadId);
         
         if (!session) {
+            console.log(`[API] Session ${threadId} NOT FOUND in active sessions`);
             return res.status(404).json({
                 error: 'Session not found or expired',
                 threadId
             });
         }
+        
+        console.log(`[API] Session ${threadId} found, has SSE response: ${!!session.sseResponse}`);
         
         // If decision is "no", feedback is required
         if (decision === 'no' && (!feedback || feedback.trim() === '')) {
@@ -220,17 +233,20 @@ router.post("/recipe-plan/resume/:threadId", async (req: Request, res: Response)
         res.status(200).json({
             message: 'Resume completed',
             threadId,
+            sseUrl: `/api/recipe-plan/stream/${threadId}`,
             decision,
             interrupted: result.interrupted
         });
         
     } catch (error) {
         console.error('[API] Resume error:', error);
+        console.error('[API] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
         
         // Only send error if we haven't sent a response yet
         if (!res.headersSent) {
             res.status(500).json({
-                error: error instanceof Error ? error.message : 'Resume failed'
+                error: error instanceof Error ? error.message : 'Resume failed',
+                details: error instanceof Error ? error.stack : undefined
             });
         }
     }

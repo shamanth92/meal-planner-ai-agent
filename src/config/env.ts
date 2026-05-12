@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const validateEnv = () => {
-    const required = ['ANTHROPIC_API_KEY', 'PORT', 'SPOONACULAR_API_KEY', 'SPOONACULAR_API_HOST'];
+    const required = ['OPENAI_API_KEY', 'PORT', 'SPOONACULAR_API_KEY', 'SPOONACULAR_API_HOST'];
     const missing: string[] = [];
     
     required.forEach(key => {
@@ -22,8 +22,8 @@ export const config = {
     get port() {
         return parseInt(process.env.PORT || '3000');
     },
-    get anthropicApiKey() {
-        return process.env.ANTHROPIC_API_KEY;
+    get openaiApiKey() {
+        return process.env.OPENAI_API_KEY;
     },
     get spoonacularApiKey() {
         return process.env.SPOONACULAR_API_KEY;

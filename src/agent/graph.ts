@@ -47,7 +47,9 @@ const routeAfterMealPicker = (state: typeof RecipeAgentState.State) => {
  * @returns Next node name
  */
 const routeAfterHumanReview = (state: typeof RecipeAgentState.State) => {
-    return state.needsRegeneration ? "mealSuggester" : "recipeFetcher";
+    const nextNode = state.needsRegeneration ? "mealSuggester" : "recipeFetcher";
+    console.log(`[Graph] routeAfterHumanReview: needsRegeneration=${state.needsRegeneration}, routing to ${nextNode}`);
+    return nextNode;
 };
 
 /**

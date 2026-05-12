@@ -18,13 +18,13 @@ export const RecipeQuerySchema = z.object({
 });
 
 export const MealSchema = z.object({
-    day: z.number().optional(),
+    day: z.number().default(1),
     name: z.string(),
     description: z.string(),
     cuisine: z.string(),
     keywords: z.array(z.string()),
     fallbackKeywords: z.array(z.string()),
-    spoonacularId: z.number().optional(),
+    spoonacularId: z.number().default(0),
 });
 
 export const RecipeStepSchema = z.object({
@@ -37,7 +37,7 @@ export const NutritionSchema = z.object({
     protein: z.number(),
     carbs: z.number(),
     sugar: z.number(),
-    fat: z.number().optional(),
+    fat: z.number().default(0),
 });
 
 export const RecipeSchema = z.object({
@@ -70,9 +70,9 @@ export const NutritionAnalysisSchema = z.object({
 });
 
 export const WeeklyNutritionSchema = z.object({
-    totals: WeeklyNutritionTotalsSchema.optional(),
+    totals: WeeklyNutritionTotalsSchema.default({ calories: 0, protein: 0, carbs: 0 }),
     daily: z.array(DailyNutritionSchema),
-    analysis: NutritionAnalysisSchema.optional(),
+    analysis: NutritionAnalysisSchema.default({ summary: "", pros: [], cons: [], recommendations: [] }),
 });
 
 export const GroceryItemSchema = z.object({
