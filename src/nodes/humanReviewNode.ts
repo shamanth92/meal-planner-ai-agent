@@ -83,12 +83,8 @@ export const humanReviewNode = async (state: typeof RecipeAgentState.State) => {
     }) as { decision: string; feedback?: string };
     
     // Process user's decision (code below runs after resume)
-    console.log(`[HumanReview] Received decision: "${userDecision.decision}"`);
-    console.log(`[HumanReview] Feedback: "${userDecision.feedback || 'none'}"`);
-    
     if (userDecision.decision === "yes") {
         console.log("\n✅ Proceeding with the meal plan...\n");
-        console.log("[HumanReview] Setting needsRegeneration = false");
         return { 
             needsRegeneration: false,
             userFeedback: undefined
@@ -100,7 +96,6 @@ export const humanReviewNode = async (state: typeof RecipeAgentState.State) => {
     
     if (!feedback || feedback.trim() === "") {
         console.log("\n⚠️  No feedback provided. Proceeding with current meal plan...\n");
-        console.log("[HumanReview] Setting needsRegeneration = false (no feedback)");
         return { 
             needsRegeneration: false,
             userFeedback: undefined
@@ -108,7 +103,6 @@ export const humanReviewNode = async (state: typeof RecipeAgentState.State) => {
     }
     
     console.log(`\n🔄 Regenerating meal plan with feedback: "${feedback}"\n`);
-    console.log("[HumanReview] Setting needsRegeneration = true");
     
     // Return state update to trigger regeneration
     // Graph will route back to mealSuggester via conditional edge

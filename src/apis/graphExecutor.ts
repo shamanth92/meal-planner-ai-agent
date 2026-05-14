@@ -68,21 +68,11 @@ export const executeGraphWithSSE = async (
             configurable: { thread_id: threadId } 
         });
 
-        console.log('[GraphExecutor] Final state check:', {
-            hasNext: finalState.next && finalState.next.length > 0,
-            next: finalState.next,
-            hasTasks: !!(finalState as any).tasks,
-            tasksLength: (finalState as any).tasks?.length
-        });
-
         if (finalState.next && finalState.next.length > 0) {
             // Graph is interrupted (has next nodes but paused)
             const interruptData = (finalState as any).tasks?.[0]?.interrupts?.[0] as InterruptData;
             
-            console.log('[GraphExecutor] Interrupt data:', interruptData ? 'Found' : 'Not found');
-            
             if (interruptData) {
-                console.log('[GraphExecutor] Sending interrupt event to client');
                 sendSSEEvent(res, 'interrupt', {
                     threadId,
                     question: interruptData.value.question,
@@ -91,7 +81,6 @@ export const executeGraphWithSSE = async (
                     timestamp: new Date().toISOString()
                 });
                 
-                console.log('[GraphExecutor] Interrupt event sent, keeping connection open');
                 // Keep connection open - don't end response
                 // Client will send resume request via POST endpoint
                 return { interrupted: true };
@@ -128,7 +117,6 @@ export const resumeGraphWithSSE = async (
     resumeValue: { decision: string; feedback?: string }
 ) => {
     try {
-        console.log('[GraphExecutor] Resuming with decision:', resumeValue.decision);
         
         // Resume from interrupt with Command and continue streaming all remaining nodes
         const stream = await graph.stream(

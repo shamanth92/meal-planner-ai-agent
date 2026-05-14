@@ -48,12 +48,9 @@ export const mealPickerNode = async (state: typeof RecipeAgentState.State) => {
             // Skip Spoonacular search if meal already has a spoonacularId
             // This preserves meals during regeneration (unchanged meals keep their IDs)
             if (meal.spoonacularId && meal.spoonacularId !== 0) {
-                console.log(`[MealPicker] Skipping search for "${meal.name}" - already has Spoonacular ID: ${meal.spoonacularId}`);
                 updatedMeals.push(meal);
                 continue;
             }
-            
-            console.log(`[MealPicker] Searching Spoonacular for "${meal.name}"...`);
             
             const recipeQuery = state.recipeQuery;
 

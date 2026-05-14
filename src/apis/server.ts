@@ -23,10 +23,11 @@ app.get("/health", (_req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
+const HOST = '0.0.0.0'; // Listen on all interfaces for Render
 
-app.listen(PORT, () => {
-    console.log(`🚀 Recipe Planner API running on port ${PORT}`);
+app.listen(PORT, HOST, () => {
+    console.log(`🚀 Recipe Planner API running on ${HOST}:${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/health`);
     console.log(`🍳 Recipe planner: http://localhost:${PORT}/api/recipe-plan/start`);
 });

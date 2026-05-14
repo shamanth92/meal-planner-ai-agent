@@ -53,19 +53,14 @@ export const recipeFetcherNode = async (state: typeof RecipeAgentState.State) =>
         
         const allRecipes: z.infer<typeof RecipeSchema>[] = [];
         
-        console.log(`\n[RecipeFetcher] 📝 Processing ${state.meals.length} meal(s)...\n`);
-        
         // Process each meal to get detailed recipe
         for (let i = 0; i < state.meals.length; i++) {
             const meal = state.meals[i];
             const spoonacularId = meal.spoonacularId;
             let validatedData;
             
-            console.log(`[RecipeFetcher] ${i + 1}/${state.meals.length}: "${meal.name}" (${meal.cuisine})`);
-            
             // Path 2: AI Generation (no Spoonacular ID)
             if (!spoonacularId || spoonacularId === 0) {
-                console.log(`[RecipeFetcher]   → No Spoonacular ID found, generating recipe with AI...`);
                 
                 const mealInfo = {
                     name: meal.name,
@@ -78,21 +73,17 @@ export const recipeFetcherNode = async (state: typeof RecipeAgentState.State) =>
                 const response = await structuredRecipes.invoke(RecipeGenerationPrompt(JSON.stringify(mealInfo)));
                 
                 validatedData = RecipeResponseSchema.parse(response);
-                console.log(`[RecipeFetcher]   ✓ AI-generated recipe complete\n`);
                 
             } 
             // Path 1: Spoonacular Fetch + AI Extraction
             else {
-                console.log(`[RecipeFetcher]   → Fetching from Spoonacular (ID: ${spoonacularId})...`);
                 const recipe = await getRecipeById(spoonacularId);
 
-                console.log(`[RecipeFetcher]   → Structuring recipe data with AI...`);
                 // Use AI to extract and structure Spoonacular data
                 const structuredRecipes = model.withStructuredOutput(RecipeResponseSchema);
                 const response = await structuredRecipes.invoke(RecipePrompt(JSON.stringify(recipe)));
 
                 validatedData = RecipeResponseSchema.parse(response);
-                console.log(`[RecipeFetcher]   ✓ Recipe fetched and structured\n`);
             }
             
             if (!validatedData.recipes || validatedData.recipes.length === 0) {

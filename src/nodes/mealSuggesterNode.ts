@@ -53,8 +53,6 @@ export const mealSuggesterNode = async (state: typeof RecipeAgentState.State) =>
         else {
             // REGENERATION: Two-step process for reliable meal preservation
             if (state.userFeedback && state.meals) {
-                console.log('[MealSuggester] Regeneration requested with feedback:', state.userFeedback);
-                
                 // Step 1: Ask AI which day numbers need to be changed based on feedback
                 const AnalysisSchema = z.object({
                     daysToChange: z.array(z.number()).describe('Array of day numbers (1-7) that need to be changed based on user feedback'),
@@ -81,12 +79,9 @@ Examples:
 Return the day numbers as an array.`;
 
                 const analysis = await analysisModel.invoke(analysisPrompt);
-                console.log('[MealSuggester] Days to change:', analysis.daysToChange);
-                console.log('[MealSuggester] Reasoning:', analysis.reasoning);
                 
                 // Step 2: Generate new meals ONLY for the days that need changing
                 if (analysis.daysToChange.length === 0) {
-                    console.log('[MealSuggester] No changes needed, keeping all meals');
                     response = { meals: state.meals };
                 } else {
                     // Generate new meals for specified days
@@ -112,11 +107,9 @@ Generate ${analysis.daysToChange.length} meal(s) that address the user's feedbac
                             // Find the new meal for this day
                             const newMeal = newMeals.meals.find(m => m.day === oldMeal.day);
                             if (newMeal) {
-                                console.log(`[MealSuggester] Replacing day ${oldMeal.day}: "${oldMeal.name}" → "${newMeal.name}"`);
                                 return newMeal;
                             }
                         }
-                        console.log(`[MealSuggester] Keeping day ${oldMeal.day}: "${oldMeal.name}"`);
                         return oldMeal;
                     });
                     
